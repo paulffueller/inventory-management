@@ -30,6 +30,18 @@ Use the Task tool with these specialized subagents for appropriate tasks:
 - **Backend**: Python FastAPI (port 8001)
 - **Data**: JSON files in `server/data/` loaded via `server/mock_data.py`
 
+## Commands
+
+```bash
+./scripts/start.sh | ./scripts/stop.sh        # Both servers (bash; on Windows use the manual commands below)
+cd server && uv sync                           # Install backend deps (incl. dev deps)
+cd tests && uv run --project ../server pytest                      # All backend tests (pytest.ini lives in tests/)
+cd tests && uv run --project ../server pytest backend/test_inventory.py::test_name   # Single test
+cd client && npm run build                     # Production build (no lint or frontend tests exist)
+```
+
+API docs: http://localhost:8001/docs
+
 ## Quick Start
 
 ```bash
@@ -48,11 +60,25 @@ npm install && npm run dev
 **Data Flow**: Vue filters → `client/src/api.js` → FastAPI → In-memory filtering → Pydantic validation → Computed properties
 **Reactivity**: Raw data in refs (`allOrders`, `inventoryItems`), derived data in computed properties
 
+## Architecture Notes
+
+- **Backend**: `server/main.py` holds all routes, Pydantic models, and filter helpers (`apply_filters` for warehouse/category/status, `filter_by_month` for month or `Q1-2025`-style quarters). `QUARTER_MAP` is hard-coded to 2025. Month filtering matches on the `order_date` field, which is why inventory has no month filter.
+- **Data**: `server/mock_data.py` loads every JSON file once at import into module-level lists. `server/generate_data.py` regenerates sample data. Edits to JSON need a server restart.
+- **Tests**: `tests/backend/conftest.py` puts `server/` on `sys.path` and imports `app` directly, so tests run against the real JSON data.
+- **Frontend**: Routes are declared in `client/src/main.js`. `App.vue` renders a global `FilterBar` above `<router-view />`. Filter state is shared through the `useFilters` composable and passed to `api.js`, which skips params set to `'all'`.
+- **API base URL** is hard-coded to `http://localhost:8001/api` in `client/src/api.js`.
+- **i18n**: UI strings live in `client/src/locales/{en,ja}.js` and are read via `useI18n` (`t('a.b.c')`). Locale also switches currency (USD/JPY). Add new UI text to both locale files.
+- **Auth** (`useAuth`) is mock user data only.
+- `Backlog.vue` exists but has no route in `main.js`. `CreatePurchaseOrderRequest` is defined in `main.py` but has no POST endpoint yet; purchase orders are read-only and only feed the `has_purchase_order` flag on `/api/backlog`.
+- Longer style guidance is in `client/CLAUDE.md` and `server/CLAUDE.md`.
+
 ## API Endpoints
 - `GET /api/inventory` - Filters: warehouse, category
 - `GET /api/orders` - Filters: warehouse, category, status, month
+- `GET /api/inventory/{id}`, `/api/orders/{id}` - Single record (404 if missing)
 - `GET /api/dashboard/summary` - All filters
 - `GET /api/demand`, `/api/backlog` - No filters
+- `GET /api/reports/quarterly`, `/api/reports/monthly-trends`
 - `GET /api/spending/*` - Summary, monthly, categories, transactions
 
 ## Common Issues
@@ -68,6 +94,9 @@ npm install && npm run dev
 - Backend: `server/main.py`, `server/mock_data.py`
 - Data: `server/data/*.json`
 - Styles: `client/src/App.vue`
+
+## Code Comments
+- Always document non-obvious logic changes with comments
 
 ## Design System
 - Colors: Slate/gray (#0f172a, #64748b, #e2e8f0)
