@@ -22,6 +22,9 @@
           <router-link to="/demand" :class="{ active: $route.path === '/demand' }">
             {{ t('nav.demandForecast') }}
           </router-link>
+          <router-link to="/restocking" :class="{ active: $route.path === '/restocking' }">
+            {{ t('nav.restocking') }}
+          </router-link>
           <router-link to="/reports" :class="{ active: $route.path === '/reports' }">
             Reports
           </router-link>
@@ -55,7 +58,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { api } from './api'
 import { useAuth } from './composables/useAuth'
 import { useI18n } from './composables/useI18n'
@@ -86,13 +89,9 @@ export default {
       return [...currentUser.value.tasks, ...apiTasks.value]
     })
 
-    const loadTasks = async () => {
-      try {
-        apiTasks.value = await api.getTasks()
-      } catch (err) {
-        console.error('Failed to load tasks:', err)
-      }
-    }
+    // Note: tasks are not fetched on mount. The backend has no GET /api/tasks
+    // route (it 404'd on every page load), so apiTasks only holds tasks added
+    // during this session.
 
     const addTask = async (taskData) => {
       try {
@@ -145,8 +144,6 @@ export default {
         console.error('Failed to toggle task:', err)
       }
     }
-
-    onMounted(loadTasks)
 
     return {
       t,

@@ -6,6 +6,7 @@ export default {
     orders: 'Orders',
     finance: 'Finance',
     demandForecast: 'Demand Forecast',
+    restocking: 'Restocking',
     companyName: 'Catalyst Components',
     subtitle: 'Inventory Management System'
   },
@@ -112,6 +113,18 @@ export default {
     onTimeDelivery: 'On-Time Delivery',
     itemsCount: '{count} items',
     quantity: 'Qty',
+    submitted: {
+      title: 'Submitted Orders',
+      empty: 'No submitted restocking orders yet',
+      loadError: 'Could not load submitted orders',
+      orderNumber: 'Order Number',
+      items: 'Items',
+      totalCost: 'Total Cost',
+      submittedDate: 'Submitted',
+      leadTime: 'Lead Time (days)',
+      expectedDelivery: 'Expected Delivery',
+      status: 'Status'
+    },
     table: {
       orderNumber: 'Order Number',
       orderId: 'Order ID',
@@ -198,8 +211,40 @@ export default {
     allMonths: 'All Months'
   },
 
+  // Restocking
+  restocking: {
+    title: 'Restocking',
+    description: 'Choose a budget to see recommended purchase quantities for items with a forecasted shortfall',
+    budget: 'Budget',
+    budgetMax: 'Full restock cost',
+    totalCost: 'Total Cost',
+    remainingBudget: 'Remaining Budget',
+    itemCount: 'Items',
+    placeOrder: 'Place Order',
+    submitting: 'Submitting...',
+    updating: 'Updating recommendations...',
+    partial: 'Partial',
+    empty: 'No recommendations for this budget. Increase the budget to see items.',
+    loadError: 'Failed to load recommendations',
+    orderError: 'Failed to place order',
+    orderSuccess: 'Order {orderNumber} submitted. Lead time: {days} days.',
+    table: {
+      sku: 'SKU',
+      name: 'Name',
+      trend: 'Trend',
+      onHand: 'On Hand',
+      forecastedDemand: 'Forecasted Demand',
+      shortfall: 'Shortfall',
+      recommendedQty: 'Recommended Qty',
+      unitCost: 'Unit Cost',
+      lineTotal: 'Line Total',
+      leadTime: 'Lead Time (days)'
+    }
+  },
+
   // Statuses
   status: {
+    submitted: 'Submitted',
     delivered: 'Delivered',
     shipped: 'Shipped',
     processing: 'Processing',

@@ -27,6 +27,45 @@
         </div>
       </div>
 
+      <!-- Submitted restocking orders: separate from the filtered all-orders table below -->
+      <div v-if="submittedLoaded" class="card submitted-orders">
+        <div class="card-header">
+          <h3 class="card-title">{{ t('orders.submitted.title') }} ({{ submittedOrders.length }})</h3>
+        </div>
+        <div v-if="submittedError" class="error">{{ submittedError }}</div>
+        <div v-else-if="submittedOrders.length === 0" class="submitted-empty">
+          {{ t('orders.submitted.empty') }}
+        </div>
+        <div v-else class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ t('orders.submitted.orderNumber') }}</th>
+                <th>{{ t('orders.submitted.items') }}</th>
+                <th>{{ t('orders.submitted.totalCost') }}</th>
+                <th>{{ t('orders.submitted.submittedDate') }}</th>
+                <th>{{ t('orders.submitted.leadTime') }}</th>
+                <th>{{ t('orders.submitted.expectedDelivery') }}</th>
+                <th>{{ t('orders.submitted.status') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="order in submittedOrders" :key="order.id">
+                <td><strong>{{ order.order_number }}</strong></td>
+                <td>
+                  <div v-for="item in order.items" :key="item.sku">{{ item.sku }} x {{ item.quantity }}</div>
+                </td>
+                <td><strong>{{ formatMoney(order.total_cost) }}</strong></td>
+                <td>{{ formatDate(order.submitted_date) }}</td>
+                <td>{{ order.lead_time_days }}</td>
+                <td>{{ formatDate(order.expected_delivery) }}</td>
+                <td><span class="badge info">{{ t('status.submitted') }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">{{ t('orders.allOrders') }} ({{ orders.length }})</h3>
@@ -83,6 +122,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
+import { formatCurrency } from '../utils/currency'
 
 export default {
   name: 'Orders',
@@ -143,20 +183,53 @@ export default {
       return statusMap[status] || 'info'
     }
 
+    // Submitted restocking orders. Loaded independently so a failure here
+    // never breaks the main orders table.
+    const submittedOrders = ref([])
+    const submittedLoaded = ref(false)
+    const submittedError = ref(null)
+
+    const loadSubmittedOrders = async () => {
+      try {
+        const data = await api.getRestockingOrders()
+        submittedOrders.value = Array.isArray(data) ? data : []
+      } catch (err) {
+        submittedError.value = t('orders.submitted.loadError')
+        console.error('Failed to load submitted orders:', err)
+      } finally {
+        submittedLoaded.value = true
+      }
+    }
+
+    const formatMoney = (amount) => {
+      const value = Number(amount)
+      return formatCurrency(Number.isFinite(value) ? value : 0, currentCurrency.value)
+    }
+
     const formatDate = (dateString) => {
       const { currentLocale } = useI18n()
       const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
-      return new Date(dateString).toLocaleDateString(locale, {
+      const date = new Date(dateString)
+      // Guard against missing/invalid dates (submitted orders come from a separate source)
+      if (isNaN(date.getTime())) return '-'
+      return date.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
       })
     }
 
-    onMounted(loadOrders)
+    onMounted(() => {
+      loadOrders()
+      loadSubmittedOrders()
+    })
 
     return {
       t,
+      submittedOrders,
+      submittedLoaded,
+      submittedError,
+      formatMoney,
       loading,
       error,
       orders,
@@ -172,6 +245,16 @@ export default {
 </script>
 
 <style scoped>
+.submitted-orders {
+  margin-bottom: 1.5rem;
+}
+
+.submitted-empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: #64748b;
+}
+
 /* Fixed table layout to prevent column shifting */
 .orders-table {
   table-layout: fixed;
